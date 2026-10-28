@@ -1,6 +1,7 @@
 import os
 import sqlite3
 from contextlib import closing
+from datetime import datetime
 
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -116,7 +117,55 @@ def privacy():
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+
+    with closing(get_db()) as conn:
+        user = conn.execute(
+            "SELECT name, email, created_at FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        categories = conn.execute(
+            "SELECT category, SUM(amount) AS total, COUNT(*) AS n "
+            "FROM expenses WHERE user_id = ? GROUP BY category ORDER BY total DESC",
+            (user_id,),
+        ).fetchall()
+        recent = conn.execute(
+            "SELECT date, category, description, amount "
+            "FROM expenses WHERE user_id = ? ORDER BY date DESC, id DESC LIMIT 10",
+            (user_id,),
+        ).fetchall()
+
+    if user is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    total = sum(c["total"] for c in categories)
+    stats = {
+        "total": total,
+        "count": sum(c["n"] for c in categories),
+        "top_category": categories[0]["category"] if categories else None,
+    }
+    breakdown = [
+        {
+            "category": c["category"],
+            "total": c["total"],
+            "n": c["n"],
+            "pct": round(c["total"] / total * 100) if total else 0,
+        }
+        for c in categories
+    ]
+    member_since = datetime.strptime(user["created_at"][:10], "%Y-%m-%d").strftime("%d %b %Y")
+
+    return render_template(
+        "profile.html",
+        user=user,
+        member_since=member_since,
+        stats=stats,
+        categories=breakdown,
+        recent=recent,
+    )
 
 
 @app.route("/expenses/add")

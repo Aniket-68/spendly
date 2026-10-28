@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Your profile — Spendly{% endblock %}
+
+{% block content %}
+<section class="profile-section">
+    <div class="profile-container">
+
+        <div class="profile-card profile-header">
+            <div class="profile-avatar">{{ user.name[:1]|upper }}</div>
+            <div class="profile-identity">
+                <h1 class="profile-name">{{ user.name }}</h1>
+                <p class="profile-email">{{ user.email }}</p>
+                <p class="profile-since">Member since {{ member_since }}</p>
+            </div>
+        </div>
+
+        <div class="profile-stats">
+            <div class="profile-stat">
+                <span class="profile-stat-label">Total spent</span>
+                <span class="profile-stat-value">₹{{ "{:,.2f}".format(stats.total) }}</span>
+            </div>
+            <div class="profile-stat">
+                <span class="profile-stat-label">Expenses</span>
+                <span class="profile-stat-value">{{ stats.count }}</span>
+            </div>
+            <div class="profile-stat">
+                <span class="profile-stat-label">Top category</span>
+                <span class="profile-stat-value">{{ stats.top_category or "—" }}</span>
+            </div>
+        </div>
+
+        {% if recent %}
+        <div class="profile-grid">
+            <div class="profile-card">
+                <h2 class="profile-card-title">By category</h2>
+                <ul class="profile-cats">
+                    {% for c in categories %}
+                    <li class="profile-cat">
+                        <div class="profile-cat-top">
+                            <span class="profile-cat-name">{{ c.category }}</span>
+                            <span class="profile-cat-total">₹{{ "{:,.2f}".format(c.total) }}</span>
+                        </div>
+                        <div class="profile-bar"><div class="profile-bar-fill" style="width: {{ c.pct }}%"></div></div>
+                        <span class="profile-cat-count">{{ c.n }} expense{{ "" if c.n == 1 else "s" }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="profile-card">
+                <h2 class="profile-card-title">Recent expenses</h2>
+                <div class="profile-table-wrap">
+                    <table class="profile-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th class="profile-num">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for e in recent %}
+                            <tr>
+                                <td>{{ e.date }}</td>
+                                <td>{{ e.category }}</td>
+                                <td>{{ e.description or "—" }}</td>
+                                <td class="profile-num">₹{{ "{:,.2f}".format(e.amount) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="profile-card profile-empty">
+            <p>No expenses yet</p>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+{% endblock %}
