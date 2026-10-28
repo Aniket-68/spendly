@@ -2,7 +2,7 @@
 
 ## Overview
 
-Make the existing `/register` page functional. Today the route only renders the form; this step accepts the form submission, validates it, stores a new user with a hashed password in the `users` table, and On Suceessfly register the user is shown with a sucess message and sends the user on to the login page. It is the first feature built on the Step 1 data layer and is required before login/logout (Step 3) can authenticate anyone.
+Make the existing `/register` page functional. Today the route only renders the form; this step accepts the form submission, validates it, stores a new user with a hashed password in the `users` table, and on success shows a success message with a link to the login page, redirecting there after 3 seconds. It is the first feature built on the Step 1 data layer and is required before login/logout (Step 3) can authenticate anyone.
 
 ## Depends on
 
@@ -11,7 +11,7 @@ Make the existing `/register` page functional. Today the route only renders the 
 ## Routes
 
 - `GET /register` — render the empty registration form — public (already exists, unchanged)
-- `POST /register` — validate form, create user, redirect to `/login` on success or re-render the form with an error — public
+- `POST /register` — validate form, create user, then re-render the page with a success message (auto-redirecting to `/login`) or re-render the form with an error — public
 
 Both methods are handled by the single existing `register()` view in `app.py`. Do not add a duplicate route.
 
@@ -26,12 +26,14 @@ No database changes. The `users` table in `database/db.py` already has `name`, `
   - Change the form `action` from the hard-coded `/register` to `{{ url_for('register') }}`
   - Re-populate the `name` and `email` inputs with the submitted values after a failed submit (never the password)
   - Keep the existing `{% if error %}` block for showing errors
+  - Add a `{% if success %}` block using `.auth-success`, hide the form on success, and add a `<meta http-equiv="refresh" content="3;url=...">` via `{% block head %}`
   - Add `minlength="8"` to the password input
 
 ## Files to change
 
 - `app.py` — accept `GET` and `POST` on `/register`, add validation and insert logic, import `request`, `redirect`, `url_for`, `sqlite3`, and `generate_password_hash`
 - `templates/register.html` — as described above
+- `static/css/style.css` — add an `.auth-success` rule next to `.auth-error`, using CSS variables only
 
 ## Files to create
 
@@ -50,7 +52,7 @@ No new dependencies. Uses `sqlite3` (stdlib) and `werkzeug.security`, both alrea
 - All templates extend `base.html`
 - Use `url_for(...)` for links and redirects, not hard-coded paths
 - Replace the existing `register` view; do not add a second `/register` route
-- Edit only `app.py` and `templates/register.html` for the feature itself; do not touch other pages or `static/css/style.css` (the `.auth-error` style already exists)
+- Edit only `app.py`, `templates/register.html` and `static/css/style.css` (only to add `.auth-success`); do not touch other pages
 - Server-side validation (the HTML `required` attributes are not enough):
   - `name`, `email` and `password` must be present; strip whitespace from `name` and `email`
   - `email` must contain a single `@` with text on both sides; store it lowercased
@@ -58,14 +60,14 @@ No new dependencies. Uses `sqlite3` (stdlib) and `werkzeug.security`, both alrea
   - Show one clear error message at a time via the `error` template variable
 - Handle duplicate emails by catching `sqlite3.IntegrityError` from the insert (UNIQUE constraint), not by a separate check-then-insert, and show "An account with that email already exists"
 - Always close the connection (use `contextlib.closing`, matching `database/db.py`) and commit after the insert
-- On success, redirect to `url_for('login')`. Do not log the user in; sessions belong to Step 3
+- On success, render the page with a success message and meta-refresh to `url_for('login')`. Do not log the user in; sessions belong to Step 3
 - Do not add `secret_key`, sessions or `flash`; they are not needed in this step
 - Failed validation returns the form with HTTP 200 and the error shown
 
 ## Definition of done
 
 - [ ] `GET /register` still renders the form with name, email and password fields
-- [ ] Submitting valid details creates a row in `users` and redirects to `/login`
+- [ ] Submitting valid details creates a row in `users`, shows a success message and redirects to `/login` after 3 seconds
 - [ ] The stored `password_hash` is a werkzeug hash, not the plain password
 - [ ] The stored email is lowercased and trimmed
 - [ ] Submitting with an empty name, email or password shows an error and creates no row
